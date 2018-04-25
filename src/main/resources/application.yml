@@ -1,0 +1,120 @@
+# ----------------------------------------
+# CORE PROPERTIES
+# ----------------------------------------
+# BANNER
+banner:
+  charset: UTF-8
+
+
+server:
+  port: 9060
+  context-path: /
+  undertow: 
+    io-threads: 4
+    worker-threads: 8
+  error:
+    include-stacktrace: always
+    whitelabel:
+      enabled: true
+
+
+spring:
+  # IDENTITY
+  application:
+    name: monitoring
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+  # JACKSON (JacksonProperties)
+  jackson:
+      date-format: yyyy-MM-dd HH:mm:ss
+      time-zone: GMT+8
+  # INTERNATIONALIZATION (MessageSourceAutoConfiguration)
+  messages:
+    encoding: utf-8
+    basename: i18n/common_zh_CN
+  thymeleaf: 
+    prefix: classpath:/templates/
+    suffix: .html
+
+# LOGGING
+logging:
+
+  level:
+   root: info 
+
+# Schedule
+checkServiceStatus: 0 */1 * * * ? 
+ 
+service-list:   #===========服务组==========================
+  groupList: 
+   - ip: 192.168.1.225 
+     user: root
+     password: root
+     lastUpdate: 
+     serviceList: 
+      - service: memcached 
+        install: /var/local/memcached
+        start: service memcached start
+        match: /usr/bin/memcached
+        status:  ''
+      - service: mq 
+        install: /var/local/mq
+        start: service mq stop;service mq start
+        match: activemq
+        status:  ''
+      - service: mysql
+        install: /var/local/mysql
+        start: systemctl mysql start
+        match: mysql
+        status:  ''
+   - ip: 192.168.1.226 
+     user: root
+     password: root
+     lastUpdate: 
+     serviceList: 
+      - service: tomcat 
+        install: /var/local/apache-tomcat-8.0.33
+        start: sh /var/local/apache-tomcat-8.0.33/bin/startup.sh
+        match: apache-tomcat-8.0.3
+        status:  ''
+      - service: memcached 
+        install: /var/local/memcached
+        start: service memcached start
+        match: /usr/bin/memcached
+        status:  ''
+      - service: vsftpd 
+        install: 未知
+        start: systemctl start vsftpd
+        match: vsftpd
+        status:  ''
+#   - ip: 192.168.1.222
+#     user: root
+#     password: root
+#     lastUpdate: 
+#     serviceList: 
+#      - service: tomcat 
+#        install: /var/local/apache-tomcat-8.0.33
+#        start: sh /var/local/apache-tomcat-8.0.33/bin/startup.sh
+#        match: apache-tomcat-8.0.3
+#        status:  ''
+#      - service: memcached 
+#        install: /var/local/memcached
+#        start: service memcached start
+#        cmd: sh /var/local/apache-tomcat-8.0.33/bin/startup.sh
+#        match: /usr/bin/memcached
+#        status:  ''
+#      - service: mq 
+#        install: /var/local/mq
+#        start: service mq stop;service mq start
+#        cmd: sh /var/local/apache-tomcat-8.0.33/bin/startup.sh
+#        match: activemq
+#        status:  ''
+#      - service: vsftpd 
+#        install: /var/local/mq
+#        start: service vsftpd start
+#        cmd: sh /var/local/apache-tomcat-8.0.33/bin/startup.sh
+#        match: /usr/sbin/vsftpd
+#        status:  ''

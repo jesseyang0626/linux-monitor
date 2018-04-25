@@ -1,0 +1,209 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>BDMS运维监控系统</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <link rel="stylesheet" th:href="@{/libs/css/bootstrap.min.css}" />
+    <link rel="icon" th:href="@{/imgs/favicon.ico}"/>
+  	<script th:src="@{/libs/js/jquery.min.js}"></script>
+  	<script th:src="@{/libs/js/bootstrap.min.js}"></script>
+  	<script th:src="@{/libs/js/bootstrap-confirmation.js}"></script>
+  	<script th:src="@{/libs/js/vue.min.js}"></script>
+  	
+  	<script src="/js/index.js"></script>
+  	<script src="/js/confirm.js"></script>
+</head>
+<body>
+<div class="container" id="app">
+	<div class="row clearfix">
+		<div class="col-md-12 column">
+			<nav class="navbar navbar-default" role="navigation">
+				<div class="navbar-header"  >
+					<a class="navbar-brand" href="#" >BDMS运维监控系统</a>
+				</div>
+			</nav>
+			<div class="row clearfix">
+				<div class="col-md-12 column">
+					<div class="col-md-12 column"> 
+						<button class="btn" v-on:click="checkAll">强制刷新</button>
+						<button class="btn" data-toggle="modal" data-target="#fileModal">
+							更新软件
+						</button>
+						<button class="btn" data-toggle="modal" data-target="#sqlModal">
+							更新数据库
+						</button>
+					</div>
+				    <div class="col-md-12 column"  v-show="loading" style="text-align:center;">
+						<img src="/imgs/loading.gif"/> 
+						<p>正在查询中。。。。</p>
+					</div>
+					
+					<div class="col-md-12 column"  v-show="doing" style="text-align:center;">
+						<img src="/imgs/loading.gif"/> 
+						<p>执行操作中。。。。</p>
+					</div>
+					
+				   <div v-for="(item,index) in list"  class="col-md-6 column" style="border:1px grey solid">
+				   		<h3>服务器：{{item.ip}}</h3> 
+				   		<br></br>
+				   		<span>最后更新：{{item.lastUpdate}}</span>
+					  	<table class="table table-hover table-striped">
+							<thead>
+								<tr>
+									<th>服务名称</th>
+									<th>状态</th>
+									<th>安装位置</th>
+									<th>操作</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr v-for="serv in item.serviceList" v-bind:class="serv.status=='运行中'?'success':'danger'">
+									<td>
+										{{serv.service}}
+									</td>
+									<td>
+										{{serv.status}}
+									</td>
+									<td>
+										{{serv.install}}
+									</td>
+									<td>
+										<button class="btn btn-sm btn-success" v-on:click="doCommand(event,item.ip,serv.service,'start')" v-bind:disabled="serv.status=='运行中'?'disabled':false">启动</button>
+										<button class="btn btn-sm btn-danger"  v-on:click="doCommand(event,item.ip,serv.service,'stop')"  v-bind:disabled="serv.status=='运行中'?false:'disabled'">停止</button>
+										<button class="btn btn-sm btn-warning" v-on:click="doCommand(event,item.ip,serv.service,'restart')">重启</button>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+						<span>硬盘使用情况</span>
+					  	<table class="table table-hover table-striped">
+								<thead>
+									<tr>
+										<th>文件系统</th>
+										<th>容量</th>
+										<th>已用</th>
+										<th>可用</th>
+										<th>已用%</th>
+										<th>挂载点</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr v-for="disk in item.serviceDiskList" v-bind:class="parseInt(disk.percentUsed.replace('%',''))>80?'danger':'success'">
+										<td>
+											{{disk.fileSystem}}
+										</td>
+										<td>
+											{{disk.capacity}}
+										</td>
+										<td>
+											{{disk.used}}
+										</td>
+										<td>
+											{{disk.usable}}
+										</td>
+										<td>
+											{{disk.percentUsed}}
+										</td>
+										<td>
+											{{disk.dir}}
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						<span>内存使用情况</span>
+					  	<table class="table table-hover table-striped">
+								<thead>
+									<tr>
+										<th>total</th>
+										<th>used</th>
+										<th>free</th>
+										<th>shared</th>
+										<th>buff/cache</th>
+										<th>available</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr >
+										<td>
+											{{item.serviceMem.total}}
+										</td>
+										<td>
+											{{item.serviceMem.used}}
+										</td>
+										<td>
+											{{item.serviceMem.free}}
+										</td>
+										<td>
+											{{item.serviceMem.shared}}
+										</td>
+										<td>
+											{{item.serviceMem.buffCache}}
+										</td>
+										<td>
+											{{item.serviceMem.available}}
+										</td>
+									</tr>
+								</tbody>
+							</table>
+				  </div> 
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- 文件选择模态框 -->
+	<div class="modal fade" id="fileModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+						&times;
+					</button>
+					<h4 class="modal-title" id="myModalLabel">
+						选择war包存放位置
+					</h4>
+				</div>
+				<div class="modal-body">
+				    <span>请输入本地存放mss.war的路径</span><br></br>
+				    <input id="fileDir" class="form-control" placeholder="例如：E:\upload"></input>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">关闭
+					</button>
+					<button type="button" class="btn btn-primary" v-on:click="updateWar">
+						开始更新
+					</button>
+				</div>
+			</div><!-- /.modal-content -->
+		</div><!-- /.modal -->
+	</div>
+	<!-- 数据库文件选择模态框 -->
+	<div class="modal fade" id="sqlModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+						&times;
+					</button>
+					<h4 class="modal-title" id="myModalLabel">
+						选择三个数据库文件存放位置
+					</h4>
+				</div>
+				<div class="modal-body">
+				    <span>请手动将base.sql mss.sql ftp_db.sql 放在同一目录下，然后填入目录地址</span><br></br>
+				    <input id="sqlDir" class="form-control" placeholder="例如：E:\upload"></input>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">关闭
+					</button>
+					<button type="button" class="btn btn-primary" v-on:click="updateSQL">
+						开始更新
+					</button>
+				</div>
+			</div><!-- /.modal-content -->
+		</div><!-- /.modal -->
+	</div>
+</div>
+
+
+</body>
+</html>
